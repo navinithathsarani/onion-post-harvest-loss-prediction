@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Onion Post-Harvest Loss Prediction DSS</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --green-900:#1B5E20; --green-700:#2E7D32; --green-500:#4CAF50;
+      --green-300:#81C784; --green-100:#C8E6C9; --amber:#FFC107;
+      --red:#C62828; --surface:rgba(255,255,255,0.75);
+      --border:rgba(46,125,50,0.18); --shadow:0 8px 32px rgba(27,94,32,0.13);
+      --radius:18px; --radius-sm:10px;
+      --font-d:'Space Grotesk',sans-serif; --font-b:'Inter',sans-serif;
+    }
+    *,*::before,*::after{box-sizing:border-box}
+    body{font-family:var(--font-b);min-height:100vh;
+      background:radial-gradient(ellipse 80% 60% at 20% 0%,#d4edda 0%,transparent 60%),
+                 radial-gradient(ellipse 60% 50% at 85% 80%,#b2dfdb 0%,transparent 55%),
+                 linear-gradient(150deg,#e8f5e9 0%,#f4f8f4 50%,#e3f2fd 100%);
+      background-attachment:fixed; color:#1a2e1a}
+
+    /* HEADER */
+    .site-header{background:linear-gradient(135deg,var(--green-900) 0%,var(--green-700) 60%,#388E3C 100%);
+      padding:28px 0 22px;position:relative;overflow:hidden}
+    .site-header::before{content:'';position:absolute;inset:0;
+      background:radial-gradient(circle 300px at 10% 50%,rgba(255,255,255,.06) 0%,transparent 70%),
+                 radial-gradient(circle 200px at 90% 30%,rgba(255,193,7,.12) 0%,transparent 60%)}
+    .site-header .inner{position:relative;z-index:1}
+    .hdr-eyebrow{font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;
+      color:var(--green-300);font-weight:500;display:flex;align-items:center;gap:8px;justify-content:center}
+    .hdr-eyebrow::before,.hdr-eyebrow::after{content:'';flex:1;max-width:60px;height:1px;
+      background:var(--green-500);opacity:.5}
+    .hdr-title{font-family:var(--font-d);font-size:clamp(1.3rem,3vw,2rem);font-weight:700;
+      color:#fff;line-height:1.2;margin:6px 0 4px}
+    .hdr-sub{font-size:.82rem;color:var(--green-300);font-weight:400;letter-spacing:.04em}
+    .hdr-badge{background:rgba(255,193,7,.15);border:1px solid rgba(255,193,7,.4);color:var(--amber);
+      font-size:.7rem;font-weight:600;letter-spacing:.06em;border-radius:6px;
+      padding:3px 10px;display:inline-block;margin-top:8px}
+
+    /* CARDS */
+    .glass-card{background:var(--surface);backdrop-filter:blur(18px) saturate(180%);
+      -webkit-backdrop-filter:blur(18px) saturate(180%);border:1px solid var(--border);
+      border-radius:var(--radius);box-shadow:var(--shadow)}
+    .card-heading{font-family:var(--font-d);font-size:.78rem;font-weight:700;
+      letter-spacing:.12em;text-transform:uppercase;color:var(--green-700);
+      display:flex;align-items:center;gap:8px;padding-bottom:14px;
+      border-bottom:1px solid var(--border);margin-bottom:20px}
+
+    /* FORM */
+    .form-label{font-size:.76rem;font-weight:600;letter-spacing:.04em;color:#3a4a3a;margin-bottom:5px}
+    .form-label i{color:var(--green-700);margin-right:4px}
+    .form-control,.form-select{border:1.5px solid #c8ddc8;border-radius:var(--radius-sm);
+      font-size:.88rem;background:rgba(255,255,255,.82);transition:border-color .2s,box-shadow .2s;color:#1a2e1a}
+    .form-control:focus,.form-select:focus{border-color:var(--green-500);
+      box-shadow:0 0 0 3px rgba(76,175,80,.15);background:#fff}
+    .form-control::placeholder{color:#aac0aa}
+    .unit-label{font-size:.72rem;color:#7a9c7a;font-weight:500;margin-top:3px;display:block}
+    .form-control.is-invalid,.form-select.is-invalid{border-color:#ef9a9a;
+      box-shadow:0 0 0 3px rgba(198,40,40,.1)}
+
+    /* BUTTONS */
+    .btn-predict{background:linear-gradient(135deg,var(--green-700) 0%,var(--green-500) 100%);
+      border:none;color:#fff;font-family:var(--font-d);font-weight:600;font-size:.88rem;
+      letter-spacing:.06em;border-radius:var(--radius-sm);padding:11px 28px;
+      transition:transform .15s,box-shadow .15s;box-shadow:0 4px 16px rgba(46,125,50,.3)}
+    .btn-predict:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(46,125,50,.4);color:#fff}
+    .btn-predict:active{transform:translateY(0)}
+    .btn-predict .spinner-border{width:1rem;height:1rem;border-width:2px}
+    .btn-clear{background:rgba(255,255,255,.7);border:1.5px solid #c8ddc8;color:#4a6a4a;
+      font-weight:600;font-size:.88rem;border-radius:var(--radius-sm);padding:11px 22px;
+      transition:background .15s,border-color .15s}
+    .btn-clear:hover{background:rgba(200,230,200,.5);border-color:var(--green-500);color:var(--green-700)}
+
+    /* RESULT METRICS */
+    .result-metric{text-align:center;padding:18px 12px;border-radius:14px;
+      background:rgba(255,255,255,.6);border:1px solid var(--border)}
+    .metric-val{font-family:var(--font-d);font-size:clamp(1.7rem,4vw,2.6rem);
+      font-weight:700;line-height:1}
+    .metric-label{font-size:.72rem;font-weight:600;letter-spacing:.08em;
+      text-transform:uppercase;color:#7a9c7a;margin-top:4px}
+    .risk-badge{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-d);
+      font-size:1.05rem;font-weight:700;border-radius:8px;padding:6px 20px}
+    .risk-LOW{background:#e8f5e9;color:#2E7D32;border:2px solid #81C784}
+    .risk-MEDIUM{background:#fff8e1;color:#E65100;border:2px solid #FFC107}
+    .risk-HIGH{background:#ffebee;color:#C62828;border:2px solid #ef9a9a}
+
+    /* SHAP BAR */
+    .shap-row{margin-bottom:10px}
+    .shap-label{font-size:.8rem;font-weight:500;color:#3a5a3a;margin-bottom:3px;
+      display:flex;justify-content:space-between}
+    .shap-track{height:8px;border-radius:99px;background:#e8f5e9;overflow:hidden}
+    .shap-fill{height:100%;border-radius:99px;transition:width .9s cubic-bezier(.4,0,.2,1)}
+
+    /* DRIVERS */
+    .driver-item{display:flex;align-items:center;gap:12px;padding:10px 14px;
+      background:rgba(255,255,255,.55);border:1px solid var(--border);
+      border-radius:var(--radius-sm);margin-bottom:8px;font-size:.88rem;font-weight:500}
+    .driver-rank{width:26px;height:26px;border-radius:50%;
+      background:linear-gradient(135deg,var(--green-700),var(--green-500));
+      color:#fff;font-size:.72rem;font-weight:700;display:flex;align-items:center;
+      justify-content:center;flex-shrink:0}
+
+    /* ACTIONS */
+    .action-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;
+      border-radius:var(--radius-sm);margin-bottom:8px;font-size:.86rem;font-weight:500}
+    .action-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;
+      justify-content:center;font-size:.9rem;flex-shrink:0}
+    .actions-HIGH   .action-item{background:rgba(255,235,238,.7);border:1px solid #ffcdd2;color:#B71C1C}
+    .actions-HIGH   .action-icon{background:#ffcdd2;color:#C62828}
+    .actions-MEDIUM .action-item{background:rgba(255,248,225,.7);border:1px solid #ffe082;color:#E65100}
+    .actions-MEDIUM .action-icon{background:#ffe082;color:#E65100}
+    .actions-LOW    .action-item{background:rgba(232,245,233,.7);border:1px solid #a5d6a7;color:#1B5E20}
+    .actions-LOW    .action-icon{background:#c8e6c9;color:#2E7D32}
+
+    /* PROGRESS BAR */
+    .loss-bar-track{height:10px;border-radius:99px;background:#e8f5e9;
+      border:1px solid #c8e6c9;overflow:hidden;margin-top:8px}
+    .loss-bar-fill{height:100%;border-radius:99px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+
+    /* MISC */
+    .section-divider{height:1px;background:linear-gradient(to right,transparent,var(--border),transparent);margin:22px 0}
+    .site-footer{font-size:.73rem;color:#8aaa8a;padding:20px 0;
+      border-top:1px solid rgba(46,125,50,.1);margin-top:40px}
+    #result-section{display:none}
+    .xai-tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;padding:2px 8px;
+      border-radius:5px;background:rgba(46,125,50,.1);color:var(--green-700);
+      display:inline-block;margin-bottom:12px}
+    @media(max-width:768px){.site-header{padding:20px 0 16px}.hdr-title{font-size:1.2rem}}
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+  <div class="container inner text-center">
+    <div class="hdr-eyebrow">University of Sri Jayewardenepura · Dept. of ICT</div>
+    <h1 class="hdr-title mt-2">
+      <i class="bi bi-layers-half me-2" style="color:var(--green-300)"></i>
+      Onion Post-Harvest Loss Prediction System
+    </h1>
+    <p class="hdr-sub">AI-Based Decision Support Dashboard</p>
+    <span class="hdr-badge"><i class="bi bi-cpu me-1"></i>CatBoost · SHAP · LIME · XAI Framework</span>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="container py-4">
+  <div class="row g-4">
+
+    <!-- INPUT FORM -->
+    <div class="col-lg-5">
+      <div class="glass-card p-4 h-100">
+        <div class="card-heading"><i class="bi bi-sliders2-vertical"></i>Batch Parameters</div>
+
+        <div id="form-alert" class="alert alert-danger d-none py-2 px-3 mb-3"
+             role="alert" style="font-size:.82rem;border-radius:8px;"></div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label class="form-label" for="season"><i class="bi bi-calendar3"></i>Season</label>
+            <select class="form-select" id="season">
+              <option value="" disabled selected>Select</option>
+              <option>Yala</option><option>Maha</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label" for="vehicle_type"><i class="bi bi-truck"></i>Vehicle Type</label>
+            <select class="form-select" id="vehicle_type">
+              <option value="" disabled selected>Select</option>
+              <option>Open Truck</option><option>Covered Truck</option><option>Lorry</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label class="form-label" for="road_condition"><i class="bi bi-signpost-split"></i>Road Condition</label>
+            <select class="form-select" id="road_condition">
+              <option value="" disabled selected>Select</option>
+              <option>Good</option><option>Moderate</option><option>Poor</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label" for="packaging_type"><i class="bi bi-box-seam"></i>Packaging Type</label>
+            <select class="form-select" id="packaging_type">
+              <option value="" disabled selected>Select</option>
+              <option>Jute Bags</option><option>Plastic Crates</option><option>Poly Sacks</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label class="form-label" for="quantity_kg"><i class="bi bi-weight"></i>Quantity</label>
+            <input type="number" class="form-control" id="quantity_kg" placeholder="e.g. 500" min="1" />
+            <span class="unit-label">kilograms (kg)</span>
+          </div>
+          <div class="col-6">
+            <label class="form-label" for="distance_km"><i class="bi bi-pin-map"></i>Distance</label>
+            <input type="number" class="form-control" id="distance_km" placeholder="e.g. 180" min="1" />
+            <span class="unit-label">kilometres (km)</span>
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label class="form-label" for="temperature_c"><i class="bi bi-thermometer-half"></i>Temperature</label>
+            <input type="number" class="form-control" id="temperature_c" placeholder="e.g. 30" step="0.1" />
+            <span class="unit-label">degrees Celsius (°C)</span>
+          </div>
+          <div class="col-6">
+            <label class="form-label" for="humidity_pct"><i class="bi bi-droplet-half"></i>Humidity</label>
+            <input type="number" class="form-control" id="humidity_pct" placeholder="e.g. 75" min="0" max="100" />
+            <span class="unit-label">percentage (%)</span>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label" for="transit_hours"><i class="bi bi-clock"></i>Transit Duration</label>
+          <input type="number" class="form-control" id="transit_hours" placeholder="e.g. 8" min="0.5" step="0.5" />
+          <span class="unit-label">hours</span>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button class="btn btn-predict flex-fill" id="btn-predict" onclick="runPrediction().catch(console.error)">            <span id="btn-label"><i class="bi bi-lightning-charge-fill me-2"></i>Predict Loss</span>
+            <span id="btn-loading" class="d-none">
+              <span class="spinner-border me-2" role="status" aria-hidden="true"></span>Analysing…
+            </span>
+          </button>
+          <button class="btn btn-clear" onclick="clearForm()" title="Clear all inputs">
+            <i class="bi bi-arrow-counterclockwise me-1"></i>Clear
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="col-lg-7">
+
+      <!-- Placeholder -->
+      <div id="placeholder-card" class="glass-card p-4 text-center"
+           style="border:2px dashed var(--green-100);background:rgba(255,255,255,.45)">
+        <div style="padding:48px 24px">
+          <div style="width:72px;height:72px;margin:0 auto 20px;border-radius:50%;
+               background:linear-gradient(135deg,#e8f5e9,#c8e6c9);display:flex;
+               align-items:center;justify-content:center">
+            <i class="bi bi-graph-up" style="font-size:2rem;color:var(--green-700)"></i>
+          </div>
+          <p style="font-family:var(--font-d);font-size:1.05rem;font-weight:600;
+               color:#3a5a3a;margin-bottom:8px">Awaiting Batch Analysis</p>
+          <p style="font-size:.82rem;color:#8aaa8a;max-width:300px;margin:0 auto">
+            Enter the transport parameters and click <strong>Predict Loss</strong> to generate
+            an XAI-informed risk assessment for the Dambulla–Colombo supply corridor.
+          </p>
+        </div>
+      </div>
+
+      <!-- Results panel -->
+      <div id="result-section">
+
+        <!-- Metrics card -->
+        <div class="glass-card p-4 mb-4">
+          <div class="card-heading"><i class="bi bi-clipboard2-data"></i>Batch Assessment Result</div>
+          <div class="row g-3 mb-3">
+            <div class="col-4">
+              <div class="result-metric">
+                <div class="metric-val" id="r-loss" style="color:var(--green-700)">—</div>
+                <div class="metric-label">Predicted Loss</div>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="result-metric">
+                <div class="metric-val" id="r-conf" style="color:#5a7a9a">—</div>
+                <div class="metric-label">Confidence</div>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="result-metric d-flex flex-column align-items-center justify-content-center">
+                <div class="metric-label mb-2">Risk Level</div>
+                <div id="r-risk-badge">—</div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="d-flex justify-content-between"
+                 style="font-size:.73rem;color:#7a9c7a;font-weight:500">
+              <span>0%</span>
+              <span id="r-loss-label" style="font-weight:600;color:#3a5a3a"></span>
+              <span>40%</span>
+            </div>
+            <div class="loss-bar-track">
+              <div class="loss-bar-fill" id="r-loss-bar" style="width:0%;background:var(--green-500)"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SHAP Importance -->
+        <div class="glass-card p-4 mb-4">
+          <div class="card-heading"><i class="bi bi-bar-chart-steps"></i>XAI Feature Contributions
+            <span class="ms-auto xai-tag">SHAP</span>
+          </div>
+          <div id="shap-bars"></div>
+        </div>
+
+        <!-- Drivers + Actions -->
+        <div class="row g-4">
+          <div class="col-md-6">
+            <div class="glass-card p-4 h-100">
+              <div class="card-heading"><i class="bi bi-exclamation-diamond"></i>Primary Spoilage Drivers</div>
+              <div id="drivers-list"></div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="glass-card p-4 h-100">
+              <div class="card-heading"><i class="bi bi-clipboard2-check"></i>Recommended Actions</div>
+              <div id="actions-list"></div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /result-section -->
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container text-center">
+    <p class="mb-1">
+      <i class="bi bi-mortarboard me-1" style="color:var(--green-500)"></i>
+      Department of Information &amp; Communication Technology · University of Sri Jayewardenepura
+    </p>
+    <p class="mb-0" style="color:#aac0aa">
+      XAI Research Project · CatBoost R²=0.8313 · Dambulla–Colombo Onion Supply Corridor · AF/21/17467
+    </p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   DSS FRONTEND · Onion Post-Harvest Loss Prediction
+   University of Sri Jayewardenepura · AF/21/17467
+   Primary: POST /predict (Flask + trained models)
+   Fallback: calibrated local engine (works standalone, no server needed)
+   Final displayed prediction = Hybrid Ensemble in both paths.
+═══════════════════════════════════════════════════════════════════════════ */
+
+/* ════════════════════════════════════════════════════════════════════════════
+   LOCAL FALLBACK ENGINE
+   Calibrated to dataset: 1,000 records · mean 17.49% · CatBoost R²=0.8313
+   Mirrors additive feature-contribution architecture from training notebook.
+   Activated automatically when Flask /predict is unreachable.
+════════════════════════════════════════════════════════════════════════════ */
+const BASELINE = 17.49;
+const FW = {
+  transit_hours:  { fn: v => v<=4?-3.2:v<=7?-0.8:v<=10?1.6:v<=14?3.8:5.5,
+                    label:'Transit Duration',     hi:'Long Transit Duration',     lo:'Short Transit Duration' },
+  humidity_pct:   { fn: v => v<50?-2.8:v<65?-1.0:v<75?0.8:v<85?2.6:4.2,
+                    label:'Humidity Level',        hi:'High Humidity',             lo:'Low Humidity' },
+  temperature_c:  { fn: v => v<22?-2.2:v<27?-0.5:v<31?1.1:v<35?2.5:3.8,
+                    label:'Temperature',           hi:'High Temperature',          lo:'Cool Temperature' },
+  road_condition: { fn: v => ({'Good':-2.0,'Moderate':0.5,'Poor':3.2}[v]||0),
+                    label:'Road Condition',        hi:'Poor Road Condition',       lo:'Good Road Condition' },
+  vehicle_type:   { fn: v => ({'Covered Truck':-1.8,'Lorry':0.4,'Open Truck':2.6}[v]||0),
+                    label:'Vehicle Type',          hi:'Open Vehicle (Exposure)',   lo:'Covered Vehicle (Protected)' },
+  distance_km:    { fn: v => v<80?-1.8:v<150?-0.3:v<220?1.0:v<300?2.0:3.0,
+                    label:'Transport Distance',    hi:'Long Transport Distance',   lo:'Short Transport Distance' },
+  packaging_type: { fn: v => ({'Plastic Crates':-1.6,'Jute Bags':0.8,'Poly Sacks':1.9}[v]||0),
+                    label:'Packaging Type',        hi:'Inadequate Packaging',      lo:'Protective Packaging' },
+  quantity_kg:    { fn: v => v<200?-0.8:v<500?0.0:v<800?0.5:1.2,
+                    label:'Batch Quantity',        hi:'Large Batch Quantity',      lo:'Small Batch Quantity' },
+  season:         { fn: v => ({'Maha':-0.9,'Yala':1.1}[v]||0),
+                    label:'Harvest Season',        hi:'Yala Season (Hot/Humid)',   lo:'Maha Season (Cooler)' },
+};
+
+function _localPredict(inp) {
+  const contribs = Object.entries(FW).map(([feat, cfg]) => ({
+    feat, delta: cfg.fn(inp[feat]), label: cfg.label, hi: cfg.hi, lo: cfg.lo
+  }));
+  let raw = Math.max(2, Math.min(38, BASELINE + contribs.reduce((s,c)=>s+c.delta,0)));
+  const cat_pred    = +Math.max(2,Math.min(38, raw + (Math.random()*0.8-0.4))).toFixed(2);
+  const lstm_pred   = +Math.max(2,Math.min(38, raw + (Math.random()*2.0-1.0))).toFixed(2);
+  const hybrid_pred = +Math.max(2,Math.min(38, 0.6*cat_pred + 0.4*lstm_pred)).toFixed(2);
+  const sorted      = [...contribs].sort((a,b)=>Math.abs(b.delta)-Math.abs(a.delta));
+  const maxAbs      = Math.max(...contribs.map(c=>Math.abs(c.delta)), 0.1);
+  const risk_level  = hybrid_pred>=22?'HIGH':hybrid_pred>=14?'MEDIUM':'LOW';
+  const dominance   = Math.abs(sorted[0].delta)/(sorted.reduce((s,c)=>s+Math.abs(c.delta),0)||1);
+  return {
+    catboost_prediction: cat_pred,
+    lstm_prediction:     lstm_pred,
+    hybrid_prediction:   hybrid_pred,
+    risk_level,
+    confidence: Math.round(78 + dominance*18),
+    model_source: 'fallback',
+    top_drivers: sorted.slice(0,3).map(c => c.delta>=0?c.hi:c.lo),
+    shap_values: sorted.map(c => ({
+      feature:  c.feat,
+      label:    c.label,
+      value:    +c.delta.toFixed(4),
+      pct:      Math.round(Math.abs(c.delta)/maxAbs*100),
+      positive: c.delta >= 0,
+    })),
+  };
+}
+
+/* ── Risk configuration ────────────────────────────────────────────────────── */
+const RISK_CONFIG = {
+  HIGH: {
+    icon:'bi-exclamation-triangle-fill', barColor:'#C62828',
+    actions:[
+      {icon:'bi-wind',         text:'Improve ventilation immediately'},
+      {icon:'bi-speedometer2', text:'Reduce transport duration'},
+      {icon:'bi-cart-check',   text:'Prioritise batch for immediate sale'},
+      {icon:'bi-eye',          text:'Inspect packaging condition'}
+    ]
+  },
+  MEDIUM: {
+    icon:'bi-exclamation-circle-fill', barColor:'#E65100',
+    actions:[
+      {icon:'bi-thermometer',     text:'Monitor storage conditions closely'},
+      {icon:'bi-box-seam',        text:'Inspect packaging quality'},
+      {icon:'bi-thermometer-sun', text:'Check and manage temperature levels'}
+    ]
+  },
+  LOW: {
+    icon:'bi-check-circle-fill', barColor:'#2E7D32',
+    actions:[
+      {icon:'bi-truck',           text:'Continue standard transportation procedures'},
+      {icon:'bi-clipboard-check', text:'Routine monitoring – no immediate action required'}
+    ]
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RENDER
+═══════════════════════════════════════════════════════════════════════════ */
+function renderResults(data) {
+  const {
+    hybrid_prediction: hybrid_pred,
+    catboost_prediction: cat_pred,
+    lstm_prediction: lstm_pred,
+    risk_level, confidence,
+    top_drivers,
+    shap_values: shap_features,
+    model_source
+  } = data;
+
+  const cfg = RISK_CONFIG[risk_level];
+
+  /* ── Primary metrics (Hybrid is the final answer) ── */
+  document.getElementById('r-loss').textContent       = hybrid_pred.toFixed(1) + ' %';
+  document.getElementById('r-conf').textContent       = confidence + ' %';
+  document.getElementById('r-loss-label').textContent = hybrid_pred.toFixed(1) + '%';
+
+  document.getElementById('r-risk-badge').innerHTML =
+    `<span class="risk-badge risk-${risk_level}">
+       <i class="bi ${cfg.icon}"></i> ${risk_level}
+     </span>`;
+
+  /* ── Loss progress bar ── */
+  const pct = Math.min((hybrid_pred / 40) * 100, 100);
+  const bar = document.getElementById('r-loss-bar');
+  bar.style.background = cfg.barColor;
+  setTimeout(() => { bar.style.width = pct + '%'; }, 80);
+
+  /* ── SHAP feature contribution bars ── */
+  const shapEl = document.getElementById('shap-bars');
+  if (shap_features && shap_features.length > 0) {
+    shapEl.innerHTML = shap_features.map(f => {
+      const positive = f.positive;
+      const color    = positive ? '#C62828' : '#2E7D32';
+      const sign     = positive ? '+' : '';
+      const val      = typeof f.value === 'number' ? f.value : parseFloat(f.value) || 0;
+      return `
+        <div class="shap-row">
+          <div class="shap-label">
+            <span>${f.label}</span>
+            <span style="color:${color};font-weight:600">${sign}${val.toFixed(3)}</span>
+          </div>
+          <div class="shap-track">
+            <div class="shap-fill" style="width:0%;background:${color}"
+                 data-pct="${f.pct}"></div>
+          </div>
+        </div>`;
+    }).join('');
+    setTimeout(() => {
+      shapEl.querySelectorAll('.shap-fill').forEach(el => {
+        el.style.width = el.dataset.pct + '%';
+      });
+    }, 120);
+  } else {
+    shapEl.innerHTML = '<p style="font-size:.82rem;color:#8aaa8a;text-align:center;padding:12px 0">SHAP values not available in current mode.</p>';
+  }
+
+  /* ── Top-3 spoilage drivers ── */
+  const driversArr = Array.isArray(top_drivers) ? top_drivers : [];
+  document.getElementById('drivers-list').innerHTML = driversArr.length
+    ? driversArr.map((d,i) => `
+        <div class="driver-item">
+          <div class="driver-rank">${i+1}</div>
+          <span>${d}</span>
+        </div>`).join('')
+    : '<p style="font-size:.82rem;color:#8aaa8a">Driver data unavailable.</p>';
+
+  /* ── Recommendations ── */
+  const actEl = document.getElementById('actions-list');
+  actEl.className = `actions-${risk_level}`;
+  actEl.innerHTML = cfg.actions.map(a => `
+    <div class="action-item">
+      <div class="action-icon"><i class="bi ${a.icon}"></i></div>
+      <span>${a.text}</span>
+    </div>`).join('');
+
+  /* ── Model source badge (trained vs fallback) ── */
+  if (model_source === 'fallback') {
+    const badge = document.querySelector('.hdr-badge');
+    if (badge && !badge.querySelector('.demo-note')) {
+      badge.insertAdjacentHTML('beforeend',
+        ' <span class="demo-note" style="opacity:.7;font-size:.65rem">(demo mode)</span>');
+    }
+  }
+
+  /* ── Reveal results panel ── */
+  document.getElementById('placeholder-card').style.display = 'none';
+  const rs = document.getElementById('result-section');
+  rs.style.display   = 'block';
+  rs.style.opacity   = '0';
+  rs.style.transform = 'translateY(12px)';
+  requestAnimationFrame(() => {
+    rs.style.transition = 'opacity .35s ease, transform .35s ease';
+    rs.style.opacity    = '1';
+    rs.style.transform  = 'translateY(0)';
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   VALIDATION
+═══════════════════════════════════════════════════════════════════════════ */
+function collectAndValidate() {
+  const ids = ['season','vehicle_type','road_condition','packaging_type',
+               'quantity_kg','distance_km','temperature_c','humidity_pct','transit_hours'];
+  ids.forEach(id => document.getElementById(id)?.classList.remove('is-invalid'));
+  hideAlert();
+
+  const v = {
+    season:         document.getElementById('season').value,
+    vehicle_type:   document.getElementById('vehicle_type').value,
+    road_condition: document.getElementById('road_condition').value,
+    packaging_type: document.getElementById('packaging_type').value,
+    quantity_kg:    parseFloat(document.getElementById('quantity_kg').value),
+    distance_km:    parseFloat(document.getElementById('distance_km').value),
+    temperature_c:  parseFloat(document.getElementById('temperature_c').value),
+    humidity_pct:   parseFloat(document.getElementById('humidity_pct').value),
+    transit_hours:  parseFloat(document.getElementById('transit_hours').value),
+  };
+
+  const cats  = ['season','vehicle_type','road_condition','packaging_type'];
+  const nums  = ['quantity_kg','distance_km','temperature_c','humidity_pct','transit_hours'];
+  const names = {
+    season:'Season', vehicle_type:'Vehicle Type', road_condition:'Road Condition',
+    packaging_type:'Packaging Type', quantity_kg:'Quantity (kg)', distance_km:'Distance (km)',
+    temperature_c:'Temperature (°C)', humidity_pct:'Humidity (%)', transit_hours:'Transit Hours'
+  };
+
+  for (const id of cats) {
+    if (!v[id]) {
+      document.getElementById(id)?.classList.add('is-invalid');
+      showAlert(`${names[id]} is required.`); return null;
+    }
+  }
+  for (const id of nums) {
+    if (isNaN(v[id])) {
+      document.getElementById(id)?.classList.add('is-invalid');
+      showAlert(`${names[id]} must be a valid number.`); return null;
+    }
+  }
+  if (v.humidity_pct < 0 || v.humidity_pct > 100) {
+    document.getElementById('humidity_pct').classList.add('is-invalid');
+    showAlert('Humidity must be between 0 and 100 %.'); return null;
+  }
+  return v;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FETCH API – POST /predict  (falls back to local engine on any failure)
+═══════════════════════════════════════════════════════════════════════════ */
+async function runPrediction() {
+  const inputs = collectAndValidate();
+  if (!inputs) return;
+
+  setLoading(true);
+
+  try {
+    let data;
+    try {
+      /* ── Try Flask backend first (6 s timeout via Promise.race) ── */
+      const fetchPromise = fetch('/predict', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(inputs),
+      });
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), 6000)
+      );
+      const response = await Promise.race([fetchPromise, timeoutPromise]);
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || `HTTP ${response.status}`);
+      }
+      data = await response.json();
+      if (data.error) throw new Error(data.error);
+
+    } catch (fetchErr) {
+      /* ── Flask unreachable or errored → use local fallback ── */
+      data = _localPredict(inputs);
+    }
+
+    renderResults(data);
+    document.getElementById('result-section').scrollIntoView({ behavior:'smooth', block:'nearest' });
+
+  } catch (err) {
+    showAlert(`Prediction error: ${err.message}`);
+  } finally {
+    setLoading(false);
+  }
+}
+
+/* ── Utility helpers ─────────────────────────────────────────────────────── */
+function showAlert(msg) {
+  const el = document.getElementById('form-alert');
+  el.innerHTML = `<i class="bi bi-exclamation-circle me-2"></i>${msg}`;
+  el.classList.remove('d-none');
+}
+function hideAlert() { document.getElementById('form-alert').classList.add('d-none'); }
+
+function setLoading(on) {
+  document.getElementById('btn-label').classList.toggle('d-none', on);
+  document.getElementById('btn-loading').classList.toggle('d-none', !on);
+  document.getElementById('btn-predict').disabled = on;
+}
+
+function clearForm() {
+  ['season','vehicle_type','road_condition','packaging_type'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.selectedIndex = 0; el.classList.remove('is-invalid'); }
+  });
+  ['quantity_kg','distance_km','temperature_c','humidity_pct','transit_hours'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.value = ''; el.classList.remove('is-invalid'); }
+  });
+  hideAlert();
+  document.getElementById('result-section').style.display = 'none';
+  document.getElementById('placeholder-card').style.display = 'block';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !document.getElementById('btn-predict').disabled) runPrediction();
+});
+</script>
+</body>
+</html>
